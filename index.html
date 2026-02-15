@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GN-MATH SIMPLE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Global Montserrat 900 Styling [cite: 61] */
+        *, *::before, *::after, input, button {
+            font-family: 'Montserrat', sans-serif !important;
+            font-weight: 900 !important;
+            text-transform: uppercase;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Search Bar Styling [cite: 23] */
+        #searchBar {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 30px;
+            background: #181818;
+            border: 1px solid rgba(255, 255, 255, .1);
+            color: #fff;
+            border-radius: 12px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        /* Game Grid [cite: 28] */
+        #container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 25px;
+        }
+
+        /* Game Card - No Blue Hover [cite: 29-30] */
+        .zone-item {
+            background-color: #181818;
+            border: 1px solid rgba(255, 255, 255, .05);
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform .25s, box-shadow .25s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Keep lift animation, remove blue border */
+        .zone-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .zone-item img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .game-title {
+            padding: 15px;
+            text-align: center;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Player Overlay [cite: 34-41] */
+        #zoneViewer {
+            position: fixed;
+            inset: 0;
+            background-color: #000;
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+        }
+
+        .zone-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #111;
+            padding: 12px 24px;
+            border-bottom: 2px solid #222;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        #zoneFrame {
+            flex-grow: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Header Buttons [cite: 38-39] */
+        .player-btn {
+            background-color: #252525;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: 0.2s;
+        }
+
+        .player-btn:hover { background-color: #333; }
+        .close-btn { background-color: #ff3333; border: none; }
+        .close-btn:hover { background-color: #cc0000; }
+    </style>
+</head>
+<body>
+
+    <input type="text" id="searchBar" placeholder="SEARCH ALL ZONES..." oninput="filterZones()">
+    <div id="container">LOADING DATABASE...</div>
+
+    <div id="zoneViewer">
+        <div class="zone-header">
+            <h2 id="zoneName" style="margin:0; font-size: 18px;">GAME</h2>
+            <div class="header-controls">
+                <button class="player-btn" onclick="fullscreenZone()">FULLSCREEN</button>
+                <button class="player-btn" onclick="aboutBlank()">NEW TAB</button>
+                <button class="player-btn close-btn" onclick="closeZone()">CLOSE</button>
+            </div>
+        </div>
+        <span id="activeZoneId" style="display:none;"></span>
+    </div>
+
+    <script>
+        // --- 1. SETUP ---
+        const zonesURL = "https://cdn.jsdelivr.net/gh/gn-math/assets@main/zones.json";
+        const coverURL = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
+        const htmlURL = "https://cdn.jsdelivr.net/gh/gn-math/html@main";
+        
+        let zones = [];
+        const nativeFetch = window.fetch;
+
+        // --- 2. DATA LOADING ---
+        async function listZones() {
+            try {
+                const response = await nativeFetch(zonesURL + "?t=" + Date.now());
+                zones = await response.json();
+                displayZones(zones);
+            } catch (err) {
+                document.getElementById('container').innerText = "FAILED TO CONNECT TO DATABASE.";
+            }
+        }
+
+        function displayZones(data) {
+            const container = document.getElementById('container');
+            container.innerHTML = "";
+            data.forEach(file => {
+                const item = document.createElement("div");
+                item.className = "zone-item";
+                item.onclick = () => openZone(file);
+
+                const img = document.createElement("img");
+                img.src = file.cover.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
+                
+                const title = document.createElement("div");
+                title.className = "game-title";
+                title.textContent = file.name;
+
+                item.appendChild(img);
+                item.appendChild(title);
+                container.appendChild(item);
+            });
+        }
+
+        // --- 3. GAME PLAYER LOGIC ---
+        function openZone(file) {
+            const viewer = document.getElementById('zoneViewer');
+            const nameDisplay = document.getElementById('zoneName');
+            const idTracker = document.getElementById('activeZoneId');
+            
+            // Clean up previous game session [cite: 137]
+            const oldFrame = document.getElementById('zoneFrame');
+            if (oldFrame) oldFrame.remove();
+
+            const frame = document.createElement('iframe');
+            frame.id = "zoneFrame";
+            viewer.appendChild(frame);
+
+            viewer.style.display = "flex";
+            nameDisplay.textContent = "LOADING " + file.name + "...";
+            idTracker.textContent = file.id; // Track ID for new tab button [cite: 135]
+
+            const gameUrl = file.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
+
+            if (file.url.startsWith("http")) {
+                frame.src = file.url;
+                nameDisplay.textContent = file.name;
+            } else {
+                nativeFetch(gameUrl + "?t=" + Date.now())
+                    .then(res => res.text())
+                    .then(html => {
+                        // CRITICAL: Inject BASE tag so game assets load from the CDN 
+                        const baseTag = `<base href="${htmlURL}/">`;
+                        frame.contentDocument.open();
+                        frame.contentDocument.write(baseTag + html);
+                        frame.contentDocument.close();
+                        nameDisplay.textContent = file.name;
+                    })
+                    .catch(() => { nameDisplay.textContent = "ERROR LOADING GAME"; });
+            }
+        }
+
+        // --- 4. NEW TAB & FULLSCREEN [cite: 135-145] ---
+        function aboutBlank() {
+            const activeId = document.getElementById('activeZoneId').textContent;
+            const game = zones.find(z => z.id.toString() === activeId);
+            if (!game) return;
+
+            const gameUrl = game.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
+            const newWindow = window.open("about:blank", "_blank");
+
+            nativeFetch(gameUrl + "?t=" + Date.now())
+                .then(res => res.text())
+                .then(html => {
+                    if (newWindow) {
+                        newWindow.document.open();
+                        newWindow.document.write(`<base href="${htmlURL}/">` + html);
+                        newWindow.document.close();
+                    }
+                });
+        }
+
+        function fullscreenZone() {
+            const frame = document.getElementById('zoneFrame');
+            if (!frame) return;
+            if (frame.requestFullscreen) frame.requestFullscreen();
+            else if (frame.webkitRequestFullscreen) frame.webkitRequestFullscreen();
+            else if (frame.msRequestFullscreen) frame.msRequestFullscreen();
+        }
+
+        function closeZone() {
+            document.getElementById('zoneViewer').style.display = "none";
+            const frame = document.getElementById('zoneFrame');
+            if (frame) frame.remove();
+        }
+
+        function filterZones() {
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            const filtered = zones.filter(z => z.name.toLowerCase().includes(query));
+            displayZones(filtered);
+        }
+
+        // --- 5. SCHOOL FILTER BYPASS (AT THE BOTTOM) [cite: 183-187] ---
+        const schoolList = ["deledao", "goguardian", "lightspeed", "linewize", "securly", ".edu/"];
+        
+        window.fetch = function (url, options) {
+            try {
+                const domain = new URL(url, location.origin).hostname + "/";
+                if (schoolList.some(s => domain.includes(s))) {
+                    return Promise.reject(new Error("lam"));
+                }
+            } catch (e) {}
+            return nativeFetch.apply(this, arguments);
+        };
+
+        // Start App
+        listZones();
+    </script>
+</body>
+</html>
