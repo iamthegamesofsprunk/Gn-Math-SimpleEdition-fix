@@ -1,0 +1,114 @@
+ /* Global Montserrat 900 Styling [cite: 61] */
+        *, *::before, *::after, input, button {
+            font-family: 'Montserrat', sans-serif !important;
+            font-weight: 900 !important;
+            text-transform: uppercase;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Search Bar Styling [cite: 23] */
+        #searchBar {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 30px;
+            background: #181818;
+            border: 1px solid rgba(255, 255, 255, .1);
+            color: #fff;
+            border-radius: 12px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        /* Game Grid [cite: 28] */
+        #container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 25px;
+        }
+
+        /* Game Card - No Blue Hover [cite: 29-30] */
+        .zone-item {
+            background-color: #181818;
+            border: 1px solid rgba(255, 255, 255, .05);
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform .25s, box-shadow .25s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Keep lift animation, remove blue border */
+        .zone-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .zone-item img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .game-title {
+            padding: 15px;
+            text-align: center;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Player Overlay [cite: 34-41] */
+        #zoneViewer {
+            position: fixed;
+            inset: 0;
+            background-color: #000;
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+        }
+
+        .zone-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #111;
+            padding: 12px 24px;
+            border-bottom: 2px solid #222;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        #zoneFrame {
+            flex-grow: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Header Buttons [cite: 38-39] */
+        .player-btn {
+            background-color: #252525;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: 0.2s;
+        }
+
+        .player-btn:hover { background-color: #333; }
+        .close-btn { background-color: #ff3333; border: none; }
+        .close-btn:hover { background-color: #cc0000; }
